@@ -1,5 +1,119 @@
-﻿<h3>AddTransaction</h3>
+﻿@page "/addtransaction"
+@inject IDataService DataService
+@inject NavigationManager Nav
+
+<h3>Add New Transaction</h3>
+
+<div class="form-group mb-2">
+    <label>Title</label>
+    <input class="form-control" @bind="Title" />
+</div>
+
+<div class="form-group mb-2">
+    <label>Amount</label>
+    <input type="number" class="form-control" @bind="Amount" />
+</div>
+
+<div class="form-group mb-2">
+    <label>Type</label>
+    <select class="form-control" @bind="SelectedType">
+        <option value="">--Select Type--</option>
+        <option value="Credit">Credit (Inflow)</option>
+        <option value="Debit">Debit (Spending)</option>
+        <option value="Debt">Debt</option>
+    </select>
+</div>
+
+@if (SelectedType == "Debt")
+{
+        <div class="form-group mb-2">
+            <label>Debt Source</label>
+            <input class="form-control" @bind="DebtSource" />
+        </div>
+
+        <div class="form-group mb-2">
+            <label>Due Date</label>
+            <input type="date" class="form-control" @bind="DueDate" />
+        </div>
+}
+
+<div class="form-group mb-2">
+    <label>Tags (comma separated)</label>
+    <input class="form-control" @bind="Tags" />
+</div>
+
+<div class="form-group mb-3">
+    <label>Note (optional)</label>
+    <textarea class="form-control" @bind="Note"></textarea>
+</div>
+
+<button class="btn btn-primary" @onclick="AddTransactionAsync">Add</button>
+
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+        <p class="mt-2 text-danger">@Message</p>
+}
 
 @code {
+    private string Title = "";
+    private decimal Amount;
+    private string SelectedType = "";
+    private string Tags = "";
+    private string Note = "";
 
+    private string? DebtSource;
+    private DateTime? DueDate;
+
+    private List<Transaction> Transactions = new();
+    private string Message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Transactions = await DataService.LoadTransactionsAsync();
+    }
+
+    private async Task AddTransactionAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Title) || Amount <= 0 || string.IsNullOrWhiteSpace(SelectedType))
+        {
+            Message = "Please fill in all required fields.";
+            return;
+        }
+
+        // Check for debit with sufficient balance
+        if (SelectedType == "Debit")
+        {
+            decimal balance = Transactions
+                .Where(t => t.Type == TransactionType.Credit)
+                .Sum(t => t.Amount)
+                - Transactions
+                .Where(t => t.Type == TransactionType.Debit)
+                .Sum(t => t.Amount);
+
+            if (Amount > balance)
+            {
+                Message = "Insufficient balance for this debit transaction.";
+                return;
+            }
+        }
+
+        Transaction newTransaction = new()
+            {
+                Id = Transactions.Count + 1,
+                Title = Title,
+                Amount = Amount,
+                Type = Enum.Parse<TransactionType>(SelectedType),
+                Tags = Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList(),
+                Note = Note,
+                Date = DateTime.Now,
+                DebtSource = SelectedType == "Debt" ? DebtSource : null,
+                DueDate = SelectedType == "Debt" ? DueDate : null,
+                IsDebtCleared = SelectedType != "Debt"
+            };
+
+        Transactions.Add(newTransaction);
+        await DataService.SaveTransactionsAsync(Transactions);
+
+        Nav.NavigateTo("/viewtransactions", forceLoad: true);
+    }
 }

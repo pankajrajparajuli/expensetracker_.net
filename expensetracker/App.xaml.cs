@@ -6,10 +6,8 @@ namespace expensetracker
     {
         public App()
         {
-            InitializeComponent();
-
-            // ✅ FIX: Create an instance of MainPage
-            MainPage = new MainPage(); // or a navigation page or shell if you're using that
+            InitializeComponent(); // Must match what's defined in App.xaml
+            MainPage = new MainPage();
         }
     }
 }
