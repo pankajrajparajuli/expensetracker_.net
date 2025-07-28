@@ -1,0 +1,94 @@
+## .NET and Visual Studio
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Build results
+*.dll
+*.exe
+*.app
+*.msi
+*.nupkg
+*.vsix
+*.cache
+*.zip
+*.log
+*.db
+*.db-shm
+*.db-wal
+
+## MAUI generated resources
+*.apk
+*.aab
+*.ipa
+*.pdb
+*.xcuserstate
+platforms/
+**/Resources/Raw/*.mp3
+**/Resources/Raw/*.wav
+
+## VS Code
+.vscode/
+.history/
+*.code-workspace
+
+## Rider
+.idea/
+*.sln.iml
+
+## Dotnet tools
+.project/
+.global.json
+.nuget/
+packages/
+*.ncrunchproject
+
+## User-specific files
+*.vs/
+*.tss
+*.psess
+*.vsp
+*.vspx
+*.sdf
+*.cache
+*.dbmdl
+*.bak
+*.orig
+
+## SQLite/CSV/JSON - keep only source, ignore outputs or test files
+*.sqlite
+*.sqlite3
+*.db3
+*.csv
+*.json
+!SeedData/**/*.json
+!Assets/**/*.csv
+
+## Log and debug
+*.log
+*.tlog
+*.svclog
+*.pidb
+*.mdb
+
+## Secrets and env
+.env
+.env.local
+secrets.json
+
+## Other
+*.tmp
+*.bak
+*.swp
+Thumbs.db
+Desktop.ini
+*.DS_Store
+
+## Git
+*.goutputstream-*
+*.crdownload
+*.un~
+*.rej

@@ -1,0 +1,36 @@
+# Auto normalize line endings
+* text=auto
+
+# Treat C# and related files as text
+*.cs text
+*.razor text
+*.xaml text
+*.cshtml text
+*.sln text eol=crlf
+*.csproj text
+*.md text
+*.json text
+*.xml text
+*.yml text
+*.yaml text
+
+# SQLite as binary
+*.sqlite binary
+*.db binary
+
+# Image assets as binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Don't diff or merge lock files
+*.lock -diff -merge
+
+# Markdown treated as text
+*.md text
+
+# Code formatting hints (optional)
+*.cs linguist-language=C#
