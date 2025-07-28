@@ -1,5 +1,23 @@
-﻿<h3>NavMenu</h3>
+﻿@inject NavigationManager Nav
+@inject IDataService DataService
+
+<nav class="nav flex-column px-3 py-3">
+    <a class="nav-link" href="/dashboard">Dashboard</a>
+    <a class="nav-link" href="/addtransaction">Add Transaction</a>
+    <a class="nav-link" href="/viewtransactions">View Transactions</a>
+    <a class="nav-link" href="/settings">Settings</a>
+    <a class="nav-link text-danger" href="#" @onclick="Logout">Logout</a>
+</nav>
 
 @code {
-
+    private async Task Logout()
+    {
+        var settings = await DataService.LoadUserSettingsAsync();
+        if (settings != null)
+        {
+            settings.IsLoggedIn = false;
+            await DataService.SaveUserSettingsAsync(settings);
+            Nav.NavigateTo("/login", true);
+        }
+    }
 }

@@ -1,4 +1,6 @@
-﻿namespace expensetracker
+﻿using Microsoft.Maui.Controls;
+
+namespace expensetracker
 {
     public partial class MainPage : ContentPage
     {
