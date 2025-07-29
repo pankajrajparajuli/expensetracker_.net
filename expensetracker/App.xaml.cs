@@ -4,7 +4,7 @@ using expensetracker;
 
 namespace expensetracker
 {
-    public partial class App : Application // Ensure this matches the base class of all other partial declarations of 'App'  
+    public partial class App : Application
     {
         public App()
         {
@@ -16,15 +16,16 @@ namespace expensetracker
                 {
                     HostPage = "wwwroot/index.html",
                     RootComponents =
-                       {
-                           new RootComponent
-                           {
-                               Selector = "#app",
-                               ComponentType = typeof(BlazorApp) // This points to App.razor  
-                           }
-                       }
+                {
+                    new RootComponent
+                    {
+                        Selector = "#app",
+                        ComponentType = typeof(BlazorApp)
+                    }
+                }
                 }
             };
         }
     }
+
 }

@@ -65,7 +65,7 @@
             if (uri.StartsWith("login") || uri.StartsWith("signup"))
                 return;
 
-            var settings = await DataService.LoadUserSettingsAsync();
+            var settings = await DataService.GetSessionAsync();
 
             if (settings == null)
             {

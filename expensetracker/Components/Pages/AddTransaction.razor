@@ -1,0 +1,104 @@
+﻿@page "/addtransaction"
+@using expensetracker.Models
+@inject IDataService DataService
+@inject NavigationManager NavManager
+
+<h3>Add Transaction</h3>
+
+<div class="form-group mb-2">
+    <label>Title</label>
+    <input class="form-control" @bind="transaction.Title" />
+</div>
+
+<div class="form-group mb-2">
+    <label>Amount</label>
+    <input type="number" class="form-control" @bind="transaction.Amount" />
+</div>
+
+<div class="form-group mb-2">
+    <label>Type</label>
+    <select class="form-control" @bind="transaction.Type">
+        <option value="">-- Select --</option>
+        <option value="@TransactionType.Credit">Credit</option>
+        <option value="@TransactionType.Debit">Debit</option>
+        <option value="@TransactionType.Debt">Debt</option>
+    </select>
+</div>
+
+<div class="form-group mb-2">
+    <label>Tags (Select multiple)</label>
+    <div class="form-control" style="height:auto;">
+        @foreach (var tag in DefaultTags)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="@tag"
+                       @onchange="() => ToggleTag(tag)"
+                       checked="@transaction.Tags.Contains(tag)" />
+                <label class="form-check-label">@tag</label>
+            </div>
+        }
+    </div>
+</div>
+
+@if (transaction.Type == TransactionType.Debt)
+{
+    <div class="form-group mb-2">
+        <label>Debt Source</label>
+        <input class="form-control" @bind="transaction.DebtSource" />
+    </div>
+
+    <div class="form-group mb-2">
+        <label>Due Date</label>
+        <input type="date" class="form-control" @bind="transaction.DueDate" />
+    </div>
+}
+
+<div class="form-group mb-2">
+    <label>Note (Optional)</label>
+    <textarea class="form-control" @bind="transaction.Note"></textarea>
+</div>
+
+<button class="btn btn-primary" @onclick="SubmitTransaction">Save</button>
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="alert alert-info mt-3">@Message</div>
+}
+
+@code {
+    private Transaction transaction = new();
+    private string Message = string.Empty;
+
+    private List<string> DefaultTags = new()
+    {
+        "Yearly", "Monthly", "Food", "Drinks", "Clothes", "Gadgets",
+        "Miscellaneous", "Fuel", "Rent", "EMI", "Party"
+    };
+
+    private void ToggleTag(string tag)
+    {
+        if (transaction.Tags.Contains(tag))
+            transaction.Tags.Remove(tag);
+        else
+            transaction.Tags.Add(tag);
+    }
+
+    private async Task SubmitTransaction()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(transaction.Title) || transaction.Amount <= 0)
+            {
+                Message = "Please enter valid title and amount.";
+                return;
+            }
+
+            await DataService.AddTransactionAsync(transaction);
+            NavManager.NavigateTo("/viewtransactions");
+        }
+        catch (Exception ex)
+        {
+            Message = "Error: " + ex.Message;
+        }
+    }
+}

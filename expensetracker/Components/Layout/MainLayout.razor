@@ -1,13 +1,21 @@
 ﻿@inherits LayoutComponentBase
+@using expensetracker.Models
+@inject IDataService DataService
+@inject NavigationManager Navigation
+
+<PageTitle>Expense Tracker</PageTitle>
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    @if (ShowNavMenu)
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+    }
 
     <main>
         <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <h1 class="text-center">Expense Tracker</h1>
         </div>
 
         <article class="content px-4">
@@ -15,3 +23,47 @@
         </article>
     </main>
 </div>
+
+<style>
+    .page {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    .sidebar {
+        width: 220px;
+        background-color: #f0f2f5;
+        padding: 1rem;
+    }
+
+    main {
+        flex: 1;
+        padding: 2rem;
+        background-color: #ffffff;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+    }
+</style>
+
+@code {
+    private bool _checked = false;
+
+    private bool ShowNavMenu =>
+        !Navigation.Uri.ToLower().Contains("/login") &&
+        !Navigation.Uri.ToLower().Contains("/signup");
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_checked || !firstRender) return;
+        _checked = true;
+
+        var uri = Navigation.ToBaseRelativePath(Navigation.Uri).ToLowerInvariant();
+        if (uri.StartsWith("login") || uri.StartsWith("signup"))
+            return;
+
+        var session = await DataService.GetSessionAsync();
+        if (session is null || !session.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+        }
+    }
+}

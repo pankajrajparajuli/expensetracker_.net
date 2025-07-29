@@ -1,4 +1,4 @@
-﻿@using expensetracker.Services;
+﻿@using expensetracker.Services
 @inject IDataService DataService
 @inject NavigationManager Nav
 
@@ -13,12 +13,7 @@
 @code {
     private async Task Logout()
     {
-        var settings = await DataService.LoadUserSettingsAsync();
-        if (settings != null)
-        {
-            settings.IsLoggedIn = false;
-            await DataService.SaveUserSettingsAsync(settings);
-            Nav.NavigateTo("/login", forceLoad: true);
-        }
+        await DataService.LogoutAsync();
+        Nav.NavigateTo("/login", forceLoad: true);
     }
 }

@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace expensetracker.Models
 {
-    public class UserSettings
+    public class Session
     {
         public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public string Currency { get; set; } = "USD";
+        public bool IsLoggedIn { get; set; } = false;
     }
 }

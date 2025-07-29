@@ -1,0 +1,86 @@
+﻿@page "/settings"
+@using expensetracker.Models
+@inject IDataService DataService
+@inject NavigationManager Nav
+
+<h3 class="text-center mb-4">Account Settings</h3>
+
+<div class="container shadow rounded p-4 bg-white" style="max-width: 500px;">
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger">@ErrorMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success">@SuccessMessage</div>
+    }
+
+    <div class="form-group mb-3">
+        <label for="username">Username</label>
+        <input id="username" class="form-control" @bind="Username" disabled />
+    </div>
+
+    <div class="form-group mb-4">
+        <label for="currency">Preferred Currency</label>
+        <select id="currency" class="form-control" @bind="Currency">
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="NPR">NPR</option>
+            <option value="INR">INR</option>
+        </select>
+    </div>
+
+    <div class="d-grid gap-2">
+        <button class="btn btn-primary" @onclick="SaveSettings">Save Changes</button>
+        <button class="btn btn-secondary" @onclick="@(() => Nav.NavigateTo("/dashboard"))">Back</button>
+    </div>
+</div>
+
+@code {
+    private string Username = "";
+    private string Currency = "USD";
+    private string ErrorMessage = "";
+    private string SuccessMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = await DataService.GetSessionAsync();
+
+        if (session == null || !session.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        var user = await DataService.GetUserByUsernameAsync(session.Username);
+        if (user != null)
+        {
+            Username = user.Username;
+            Currency = user.Currency;
+        }
+        else
+        {
+            ErrorMessage = "User not found.";
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+
+        var users = await DataService.LoadUsersAsync();
+        var user = users.FirstOrDefault(u => u.Username == Username);
+
+        if (user == null)
+        {
+            ErrorMessage = "Could not find your account to update.";
+            return;
+        }
+
+        user.Currency = Currency;
+        await DataService.SaveUsersAsync(users);
+        SuccessMessage = "Settings saved successfully!";
+    }
+}

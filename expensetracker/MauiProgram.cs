@@ -15,7 +15,7 @@ namespace expensetracker
                 });
 
             builder.Services.AddMauiBlazorWebView();
-            builder.Services.AddSingleton<IDataService, LocalStorageService>();
+            builder.Services.AddSingleton<IDataService, MultiUserStorageService>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

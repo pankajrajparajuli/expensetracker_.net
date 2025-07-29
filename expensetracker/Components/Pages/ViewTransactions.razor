@@ -1,0 +1,137 @@
+﻿@page "/viewtransactions"
+@using expensetracker.Models
+@inject IDataService DataService
+@inject NavigationManager Nav
+
+<h3 class="text-center mb-4">Your Transactions</h3>
+
+<div class="container">
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger">@ErrorMessage</div>
+    }
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <input class="form-control" placeholder="Search title..." @bind="SearchTerm" />
+        </div>
+        <div class="col-md-4">
+            <select class="form-control" @bind="SelectedType">
+                <option value="">All Types</option>
+                <option value="Credit">Credit</option>
+                <option value="Debit">Debit</option>
+                <option value="Debt">Debt</option>
+            </select>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" @onclick="@(() => Nav.NavigateTo("/addtransaction"))">Add New</button>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label><strong>Filter by Tags:</strong></label>
+        <div class="row">
+            @foreach (var tag in DefaultTags)
+            {
+                <div class="col-auto">
+                    <input type="checkbox" @onchange="() => ToggleTagFilter(tag)"
+                           checked="@SelectedTags.Contains(tag)" />
+                    <label class="ms-1">@tag</label>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (FilteredTransactions.Count == 0)
+    {
+        <p class="text-muted">No transactions found for the selected filters.</p>
+    }
+    else
+    {
+        <table class="table table-striped table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Title</th>
+                    <th>Tags</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var tx in FilteredTransactions)
+                {
+                    <tr>
+                        <td>@tx.Date.ToShortDateString()</td>
+                        <td>@tx.Type</td>
+                        <td>@tx.Amount.ToString("F2")</td>
+                        <td>@tx.Title</td>
+                        <td>@string.Join(", ", tx.Tags)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private string Username = "";
+    private string ErrorMessage = "";
+    private string SearchTerm = "";
+    private string SelectedType = "";
+    private List<string> SelectedTags = new();
+    private List<Transaction> AllTransactions = new();
+    private List<Transaction> FilteredTransactions = new();
+
+    private List<string> DefaultTags = new()
+    {
+        "Yearly", "Monthly", "Food", "Drinks", "Clothes", "Gadgets",
+        "Miscellaneous", "Fuel", "Rent", "EMI", "Party"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = await DataService.GetSessionAsync();
+        if (session is null || !session.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        Username = session.Username;
+        var all = await DataService.LoadTransactionsAsync();
+
+        AllTransactions = all
+            .Where(t => t.Username == Username)
+            .ToList();
+
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        FilteredTransactions = AllTransactions
+            .Where(tx =>
+                (string.IsNullOrEmpty(SelectedType) || Enum.GetName(typeof(TransactionType), tx.Type) == SelectedType) &&
+                (string.IsNullOrEmpty(SearchTerm) || tx.Title.ToLower().Contains(SearchTerm.ToLower())) &&
+                (SelectedTags.Count == 0 || tx.Tags.Any(tag => SelectedTags.Contains(tag)))
+            )
+            .OrderByDescending(tx => tx.Date)
+            .ToList();
+    }
+
+    private void ToggleTagFilter(string tag)
+    {
+        if (SelectedTags.Contains(tag))
+            SelectedTags.Remove(tag);
+        else
+            SelectedTags.Add(tag);
+
+        ApplyFilters();
+    }
+
+    protected override void OnParametersSet()
+    {
+        ApplyFilters();
+    }
+}
