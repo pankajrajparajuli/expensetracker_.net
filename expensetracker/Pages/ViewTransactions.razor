@@ -1,5 +1,127 @@
-﻿<h3>ViewTransactions</h3>
+﻿@page "/viewtransactions"
+@inject IDataService DataService
+@using expensetracker.Models;
+@using expensetracker.Services;
+
+<h3>View Transactions</h3>
+
+<div class="filters mb-3">
+    <label>Search:</label>
+    <input class="form-control" @bind="SearchTerm" />
+
+    <label class="mt-2">Filter by Type:</label>
+    <select class="form-control" @bind="SelectedType">
+        <option value="">All</option>
+        <option>Credit</option>
+        <option>Debit</option>
+        <option>Debt</option>
+    </select>
+
+    <label class="mt-2">Filter by Tag:</label>
+    <input class="form-control" @bind="TagFilter" />
+
+    <label class="mt-2">Date Range:</label>
+    <input type="date" class="form-control" @bind="FromDate" />
+    <input type="date" class="form-control" @bind="ToDate" />
+</div>
+
+<div class="summary mb-3">
+    <p><strong>Total Inflow:</strong> @InflowTotal</p>
+    <p><strong>Total Outflow:</strong> @OutflowTotal</p>
+    <p><strong>Total Debt:</strong> @DebtTotal</p>
+    <p><strong>Net Balance:</strong> @(InflowTotal - OutflowTotal)</p>
+</div>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th @onclick="() => SortByDate()">Date @if (SortDescending)
+                {
+                    <span>↓</span>
+                }
+                else
+                {
+                    <span>↑</span>
+                }</th>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Tags</th>
+            <th>Note</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var t in FilteredTransactions)
+        {
+                <tr>
+                    <td>@t.Date.ToShortDateString()</td>
+                    <td>@t.Title</td>
+                    <td>@t.Type</td>
+                    <td>@t.Amount</td>
+                    <td>@string.Join(", ", t.Tags)</td>
+                    <td>@t.Note</td>
+                </tr>
+        }
+    </tbody>
+</table>
 
 @code {
+    private List<Transaction> AllTransactions = new();
+    private List<Transaction> FilteredTransactions => ApplyFilters();
 
+    private string SearchTerm = "";
+    private string SelectedType = "";
+    private string TagFilter = "";
+    private DateTime? FromDate = null;
+    private DateTime? ToDate = null;
+
+    private bool SortDescending = true;
+
+    private decimal InflowTotal = 0;
+    private decimal OutflowTotal = 0;
+    private decimal DebtTotal = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AllTransactions = await DataService.LoadTransactionsAsync();
+        CalculateTotals();
+    }
+
+    private List<Transaction> ApplyFilters()
+    {
+        var result = AllTransactions.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+            result = result.Where(t => t.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(SelectedType))
+            result = result.Where(t => t.Type.ToString() == SelectedType);
+
+        if (!string.IsNullOrWhiteSpace(TagFilter))
+            result = result.Where(t => t.Tags.Any(tag => tag.Contains(TagFilter, StringComparison.OrdinalIgnoreCase)));
+
+        if (FromDate.HasValue)
+            result = result.Where(t => t.Date >= FromDate.Value);
+
+        if (ToDate.HasValue)
+            result = result.Where(t => t.Date <= ToDate.Value);
+
+        result = SortDescending
+            ? result.OrderByDescending(t => t.Date)
+            : result.OrderBy(t => t.Date);
+
+        return result.ToList();
+    }
+
+    private void SortByDate()
+    {
+        SortDescending = !SortDescending;
+    }
+
+    private void CalculateTotals()
+    {
+        InflowTotal = AllTransactions.Where(t => t.Type == TransactionType.Credit).Sum(t => t.Amount);
+        OutflowTotal = AllTransactions.Where(t => t.Type == TransactionType.Debit).Sum(t => t.Amount);
+        DebtTotal = AllTransactions.Where(t => t.Type == TransactionType.Debt).Sum(t => t.Amount);
+    }
 }

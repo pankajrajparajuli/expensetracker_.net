@@ -1,11 +1,17 @@
 ﻿@inherits LayoutComponentBase
+@using expensetracker.Models;
+@using expensetracker.Services;
+@using Microsoft.AspNetCore.Components.Web
 
 <PageTitle>Expense Tracker</PageTitle>
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    @if (ShowNavMenu)
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+    }
 
     <main>
         <div class="top-row px-4">
@@ -25,30 +31,39 @@
     }
 
     .sidebar {
-        width: 200px;
-        background-color: #f8f9fa;
+        width: 220px;
+        background-color: #f0f2f5;
+        padding: 1rem;
     }
 
     main {
         flex: 1;
-        padding: 1rem;
+        padding: 2rem;
+        background-color: #ffffff;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
     }
 </style>
+
 @code {
-    [Inject] private IDataService DataService { get; set; }
-    [Inject] private NavigationManager Navigation { get; set; }
+    [Inject] private IDataService DataService { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private bool ShowNavMenu =>
+        !Navigation.Uri.ToLower().Contains("/login") &&
+        !Navigation.Uri.ToLower().Contains("/signup");
 
     protected override async Task OnInitializedAsync()
     {
-        var settings = await DataService.LoadAsync<UserSettings>("AppSettings");
+        var uri = Navigation.ToBaseRelativePath(Navigation.Uri).ToLower();
+
+        if (uri.StartsWith("login") || uri.StartsWith("signup"))
+            return;
+
+        var settings = await DataService.LoadUserSettingsAsync();
 
         if (settings == null)
-        {
-            Navigation.NavigateTo("/signup", true);
-        }
+            Navigation.NavigateTo("/signup", forceLoad: true);
         else if (!settings.IsLoggedIn)
-        {
-            Navigation.NavigateTo("/login", true);
-        }
+            Navigation.NavigateTo("/login", forceLoad: true);
     }
 }

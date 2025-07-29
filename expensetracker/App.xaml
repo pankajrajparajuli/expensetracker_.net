@@ -4,6 +4,6 @@
              x:Class="expensetracker.App">
 
     <Application.Resources>
-        <!-- App-wide resources like styles -->
+        <!-- Optional: Define global styles, colors, resources here -->
     </Application.Resources>
 </Application>

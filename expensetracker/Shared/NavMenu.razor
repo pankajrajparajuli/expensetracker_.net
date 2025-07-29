@@ -1,12 +1,13 @@
-﻿@inject NavigationManager Nav
+﻿@using expensetracker.Services;
+@inject NavigationManager Nav
 @inject IDataService DataService
 
-<nav class="nav flex-column px-3 py-3">
+<nav class="nav flex-column">
     <a class="nav-link" href="/dashboard">Dashboard</a>
     <a class="nav-link" href="/addtransaction">Add Transaction</a>
     <a class="nav-link" href="/viewtransactions">View Transactions</a>
     <a class="nav-link" href="/settings">Settings</a>
-    <a class="nav-link text-danger" href="#" @onclick="Logout">Logout</a>
+    <a class="nav-link" href="/login">Logout</a>
 </nav>
 
 @code {
@@ -17,7 +18,7 @@
         {
             settings.IsLoggedIn = false;
             await DataService.SaveUserSettingsAsync(settings);
-            Nav.NavigateTo("/login", true);
+            Nav.NavigateTo("/login", forceLoad: true);
         }
     }
 }

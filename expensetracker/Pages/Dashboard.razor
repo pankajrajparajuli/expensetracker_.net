@@ -1,5 +1,93 @@
-﻿<h3>Dashboard</h3>
+﻿@page "/dashboard"
+@inject IDataService DataService
+@using expensetracker.Models
+
+<h3 class="text-center mb-4">Dashboard</h3>
+
+<div class="container" style="max-width: 800px;">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card p-3 text-center">
+                <strong>Total Inflow:</strong>
+                <div>@TotalInflow</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card p-3 text-center">
+                <strong>Total Outflow:</strong>
+                <div>@TotalOutflow</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card p-3 text-center">
+                <strong>Total Debt:</strong>
+                <div>@TotalDebt</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card p-3 text-center">
+                <strong>Cleared Debts:</strong>
+                <div>@ClearedDebt</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card p-3 text-center">
+                <strong>Pending Debts:</strong>
+                <div>@PendingDebt</div>
+            </div>
+        </div>
+    </div>
+
+    <h5>Top 5 Highest Transactions</h5>
+    <ul>
+        @foreach (var tx in HighestTransactions)
+        {
+                <li>@tx.Type - @tx.Title - @tx.Amount</li>
+        }
+    </ul>
+
+    <h5>Pending Debts</h5>
+    @if (PendingDebtList.Any())
+    {
+            <ul>
+            @foreach (var debt in PendingDebtList)
+            {
+                        <li>@debt.Title - Due: @debt.DueDate?.ToShortDateString()</li>
+            }
+            </ul>
+    }
+    else
+    {
+            <p>No pending debts 🎉</p>
+    }
+</div>
 
 @code {
+    private List<Transaction> AllTransactions = new();
+    private List<Transaction> HighestTransactions = new();
+    private List<Transaction> PendingDebtList = new();
 
+    private decimal TotalInflow;
+    private decimal TotalOutflow;
+    private decimal TotalDebt;
+    private decimal ClearedDebt;
+    private decimal PendingDebt;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AllTransactions = await DataService.LoadTransactionsAsync();
+
+        TotalInflow = AllTransactions.Where(t => t.Type == TransactionType.Credit).Sum(t => t.Amount);
+        TotalOutflow = AllTransactions.Where(t => t.Type == TransactionType.Debit).Sum(t => t.Amount);
+        TotalDebt = AllTransactions.Where(t => t.Type == TransactionType.Debt).Sum(t => t.Amount);
+
+        ClearedDebt = AllTransactions.Where(t => t.Type == TransactionType.Debt && t.IsDebtCleared).Sum(t => t.Amount);
+        PendingDebt = AllTransactions.Where(t => t.Type == TransactionType.Debt && !t.IsDebtCleared).Sum(t => t.Amount);
+
+        PendingDebtList = AllTransactions.Where(t => t.Type == TransactionType.Debt && !t.IsDebtCleared).OrderBy(t => t.DueDate).ToList();
+        HighestTransactions = AllTransactions.OrderByDescending(t => t.Amount).Take(5).ToList();
+    }
 }
