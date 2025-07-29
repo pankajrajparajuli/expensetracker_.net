@@ -1,68 +1,82 @@
-﻿@page "/dashboard"
+﻿// Pages/Dashboard.razor
+@page "/dashboard"
 @inject IDataService DataService
 @using expensetracker.Models
 
 <h3 class="text-center mb-4">Dashboard</h3>
 
-<div class="container" style="max-width: 800px;">
+<div class="container" style="max-width: 1000px;">
     <div class="row mb-4">
         <div class="col">
-            <div class="card p-3 text-center">
+            <div class="card p-3 text-center bg-light">
                 <strong>Total Inflow:</strong>
-                <div>@TotalInflow</div>
+                <div class="display-6">@TotalInflow.ToString("C")</div>
             </div>
         </div>
         <div class="col">
-            <div class="card p-3 text-center">
+            <div class="card p-3 text-center bg-light">
                 <strong>Total Outflow:</strong>
-                <div>@TotalOutflow</div>
+                <div class="display-6">@TotalOutflow.ToString("C")</div>
             </div>
         </div>
         <div class="col">
-            <div class="card p-3 text-center">
+            <div class="card p-3 text-center bg-light">
                 <strong>Total Debt:</strong>
-                <div>@TotalDebt</div>
+                <div class="display-6">@TotalDebt.ToString("C")</div>
             </div>
         </div>
     </div>
 
     <div class="row mb-4">
         <div class="col">
-            <div class="card p-3 text-center">
+            <div class="card p-3 text-center border-success">
                 <strong>Cleared Debts:</strong>
-                <div>@ClearedDebt</div>
+                <div class="text-success">@ClearedDebt.ToString("C")</div>
             </div>
         </div>
         <div class="col">
-            <div class="card p-3 text-center">
+            <div class="card p-3 text-center border-danger">
                 <strong>Pending Debts:</strong>
-                <div>@PendingDebt</div>
+                <div class="text-danger">@PendingDebt.ToString("C")</div>
             </div>
         </div>
     </div>
 
-    <h5>Top 5 Highest Transactions</h5>
-    <ul>
-        @foreach (var tx in HighestTransactions)
-        {
-                <li>@tx.Type - @tx.Title - @tx.Amount</li>
-        }
-    </ul>
-
-    <h5>Pending Debts</h5>
-    @if (PendingDebtList.Any())
-    {
-            <ul>
-            @foreach (var debt in PendingDebtList)
-            {
-                        <li>@debt.Title - Due: @debt.DueDate?.ToShortDateString()</li>
-            }
+    <div class="row mb-5">
+        <div class="col">
+            <h5 class="mb-3">Top 5 Highest Transactions</h5>
+            <ul class="list-group">
+                @foreach (var tx in HighestTransactions)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><strong>@tx.Type</strong>: @tx.Title</span>
+                        <span>@tx.Amount.ToString("C")</span>
+                    </li>
+                }
             </ul>
-    }
-    else
-    {
-            <p>No pending debts 🎉</p>
-    }
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <h5 class="mb-3">Pending Debts</h5>
+            @if (PendingDebtList.Any())
+            {
+                <ul class="list-group">
+                    @foreach (var debt in PendingDebtList)
+                    {
+                        <li class="list-group-item">
+                            <strong>@debt.Title</strong> — Due: @debt.DueDate?.ToShortDateString()
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p class="text-success">No pending debts 🎉</p>
+            }
+        </div>
+    </div>
 </div>
 
 @code {
@@ -78,7 +92,12 @@
 
     protected override async Task OnInitializedAsync()
     {
-        AllTransactions = await DataService.LoadTransactionsAsync();
+        var settings = await DataService.LoadUserSettingsAsync();
+        if (settings == null) return;
+
+        AllTransactions = (await DataService.LoadTransactionsAsync())
+            .Where(t => t.Username == settings.Username)
+            .ToList();
 
         TotalInflow = AllTransactions.Where(t => t.Type == TransactionType.Credit).Sum(t => t.Amount);
         TotalOutflow = AllTransactions.Where(t => t.Type == TransactionType.Debit).Sum(t => t.Amount);
