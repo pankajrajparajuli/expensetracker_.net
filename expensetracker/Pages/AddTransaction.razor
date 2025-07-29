@@ -91,10 +91,19 @@
             return;
         }
 
+        var settings = await DataService.LoadUserSettingsAsync();
+        if (settings == null)
+        {
+            Message = "User not logged in.";
+            return;
+        }
+
         if (SelectedType == "Debit")
         {
-            var balance = Transactions.Where(t => t.Type == TransactionType.Credit).Sum(t => t.Amount)
-                         - Transactions.Where(t => t.Type == TransactionType.Debit).Sum(t => t.Amount);
+            var balance = Transactions
+                .Where(t => t.Username == settings.Username && t.Type == TransactionType.Credit).Sum(t => t.Amount)
+                - Transactions
+                .Where(t => t.Username == settings.Username && t.Type == TransactionType.Debit).Sum(t => t.Amount);
 
             if (Amount > balance)
             {
@@ -105,7 +114,7 @@
 
         var transaction = new Transaction
             {
-                Username = settings.Username
+                Username = settings.Username,
                 Id = Transactions.Count + 1,
                 Title = Title,
                 Amount = Amount,
@@ -123,4 +132,5 @@
         Message = "Transaction added successfully!";
         Nav.NavigateTo("/viewtransactions", true);
     }
+
 }

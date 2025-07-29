@@ -1,77 +1,91 @@
-﻿@page "/viewtransactions"
+﻿// Pages/ViewTransactions.razor
+@page "/viewtransactions"
 @inject IDataService DataService
-@using expensetracker.Models;
-@using expensetracker.Services;
+@using expensetracker.Models
+@inject NavigationManager Nav
 
-<h3>View Transactions</h3>
+<h3 class="text-center mb-4">Transaction History</h3>
 
-<div class="filters mb-3">
-    <label>Search:</label>
-    <input class="form-control" @bind="SearchTerm" />
+<div class="container" style="max-width: 900px;">
+    <div class="card p-4 mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <label>Search</label>
+                <input class="form-control" @bind="SearchTerm" />
+            </div>
+            <div class="col-md-3">
+                <label>Type</label>
+                <select class="form-control" @bind="SelectedType">
+                    <option value="">All</option>
+                    <option>Credit</option>
+                    <option>Debit</option>
+                    <option>Debt</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label>Tag</label>
+                <input class="form-control" @bind="TagFilter" />
+            </div>
+            <div class="col-md-3">
+                <label>Date Range</label>
+                <div class="d-flex gap-1">
+                    <input type="date" class="form-control" @bind="FromDate" />
+                    <input type="date" class="form-control" @bind="ToDate" />
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <label class="mt-2">Filter by Type:</label>
-    <select class="form-control" @bind="SelectedType">
-        <option value="">All</option>
-        <option>Credit</option>
-        <option>Debit</option>
-        <option>Debt</option>
-    </select>
+    <div class="card p-3 mb-4">
+        <div class="row text-center">
+            <div class="col"><strong>Total Inflow:</strong><br />@InflowTotal.ToString("C")</div>
+            <div class="col"><strong>Total Outflow:</strong><br />@OutflowTotal.ToString("C")</div>
+            <div class="col"><strong>Total Debt:</strong><br />@DebtTotal.ToString("C")</div>
+            <div class="col"><strong>Net:</strong><br />(@InflowTotal - @OutflowTotal).ToString("C")</div>
+        </div>
+    </div>
 
-    <label class="mt-2">Filter by Tag:</label>
-    <input class="form-control" @bind="TagFilter" />
-
-    <label class="mt-2">Date Range:</label>
-    <input type="date" class="form-control" @bind="FromDate" />
-    <input type="date" class="form-control" @bind="ToDate" />
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th @onclick="() => SortByDate()">Date @if (SortDescending)
+                    {
+                        <span>↓</span>
+                    }
+                    else
+                    {
+                        <span>↑</span>
+                    }</th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Tags</th>
+                <th>Note</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in FilteredTransactions)
+            {
+                    <tr>
+                        <td>@t.Date.ToShortDateString()</td>
+                        <td>@t.Title</td>
+                        <td>@t.Type</td>
+                        <td>@t.Amount.ToString("C")</td>
+                        <td>@string.Join(", ", t.Tags)</td>
+                        <td>@t.Note</td>
+                    </tr>
+            }
+        </tbody>
+    </table>
 </div>
-
-<div class="summary mb-3">
-    <p><strong>Total Inflow:</strong> @InflowTotal</p>
-    <p><strong>Total Outflow:</strong> @OutflowTotal</p>
-    <p><strong>Total Debt:</strong> @DebtTotal</p>
-    <p><strong>Net Balance:</strong> @(InflowTotal - OutflowTotal)</p>
-</div>
-
-<table class="table table-bordered table-striped">
-    <thead>
-        <tr>
-            <th @onclick="() => SortByDate()">Date @if (SortDescending)
-                {
-                    <span>↓</span>
-                }
-                else
-                {
-                    <span>↑</span>
-                }</th>
-            <th>Title</th>
-            <th>Type</th>
-            <th>Amount</th>
-            <th>Tags</th>
-            <th>Note</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var t in FilteredTransactions)
-        {
-                <tr>
-                    <td>@t.Date.ToShortDateString()</td>
-                    <td>@t.Title</td>
-                    <td>@t.Type</td>
-                    <td>@t.Amount</td>
-                    <td>@string.Join(", ", t.Tags)</td>
-                    <td>@t.Note</td>
-                </tr>
-        }
-    </tbody>
-</table>
 
 @code {
     private List<Transaction> AllTransactions = new();
     private List<Transaction> FilteredTransactions => ApplyFilters();
 
-    private string SearchTerm = "";
-    private string SelectedType = "";
-    private string TagFilter = "";
+    private string SearchTerm = string.Empty;
+    private string SelectedType = string.Empty;
+    private string TagFilter = string.Empty;
     private DateTime? FromDate = null;
     private DateTime? ToDate = null;
 
@@ -83,7 +97,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        AllTransactions = await DataService.LoadTransactionsAsync();
+        var settings = await DataService.LoadUserSettingsAsync();
+        if (settings == null) return;
+
+        AllTransactions = (await DataService.LoadTransactionsAsync())
+            .Where(t => t.Username == settings.Username)
+            .ToList();
+
         CalculateTotals();
     }
 

@@ -52,18 +52,29 @@
         !Navigation.Uri.ToLower().Contains("/login") &&
         !Navigation.Uri.ToLower().Contains("/signup");
 
-    protected override async Task OnInitializedAsync()
+    private bool _checked = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var uri = Navigation.ToBaseRelativePath(Navigation.Uri).ToLower();
+        if (!_checked)
+        {
+            _checked = true;
 
-        if (uri.StartsWith("login") || uri.StartsWith("signup"))
-            return;
+            var uri = Navigation.ToBaseRelativePath(Navigation.Uri).ToLower();
 
-        var settings = await DataService.LoadUserSettingsAsync();
+            if (uri.StartsWith("login") || uri.StartsWith("signup"))
+                return;
 
-        if (settings == null)
-            Navigation.NavigateTo("/signup", forceLoad: true);
-        else if (!settings.IsLoggedIn)
-            Navigation.NavigateTo("/login", forceLoad: true);
+            var settings = await DataService.LoadUserSettingsAsync();
+
+            if (settings == null)
+            {
+                Navigation.NavigateTo("/signup", forceLoad: true);
+            }
+            else if (!settings.IsLoggedIn)
+            {
+                Navigation.NavigateTo("/login", forceLoad: true);
+            }
+        }
     }
 }

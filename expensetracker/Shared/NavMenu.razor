@@ -1,13 +1,13 @@
 ﻿@using expensetracker.Services;
-@inject NavigationManager Nav
 @inject IDataService DataService
+@inject NavigationManager Nav
 
 <nav class="nav flex-column">
     <a class="nav-link" href="/dashboard">Dashboard</a>
     <a class="nav-link" href="/addtransaction">Add Transaction</a>
     <a class="nav-link" href="/viewtransactions">View Transactions</a>
     <a class="nav-link" href="/settings">Settings</a>
-    <a class="nav-link" href="/login">Logout</a>
+    <a class="nav-link text-danger" href="#" @onclick="Logout">Logout</a>
 </nav>
 
 @code {

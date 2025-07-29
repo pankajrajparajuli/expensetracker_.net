@@ -16,6 +16,8 @@ namespace expensetracker.Models
 public class Transaction
 {
     public int Id { get; set; }
+    public string Username { get; set; } = string.Empty;
+
     public DateTime Date { get; set; } = DateTime.Now;
     public string Title { get; set; } = string.Empty;
     public TransactionType Type { get; set; }

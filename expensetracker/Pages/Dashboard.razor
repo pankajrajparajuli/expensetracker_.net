@@ -48,10 +48,10 @@
             <ul class="list-group">
                 @foreach (var tx in HighestTransactions)
                 {
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><strong>@tx.Type</strong>: @tx.Title</span>
-                        <span>@tx.Amount.ToString("C")</span>
-                    </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>@tx.Type</strong>: @tx.Title</span>
+                            <span>@tx.Amount.ToString("C")</span>
+                        </li>
                 }
             </ul>
         </div>
@@ -62,18 +62,18 @@
             <h5 class="mb-3">Pending Debts</h5>
             @if (PendingDebtList.Any())
             {
-                <ul class="list-group">
+                    <ul class="list-group">
                     @foreach (var debt in PendingDebtList)
                     {
-                        <li class="list-group-item">
-                            <strong>@debt.Title</strong> — Due: @debt.DueDate?.ToShortDateString()
-                        </li>
+                                <li class="list-group-item">
+                                    <strong>@debt.Title</strong> — Due: @debt.DueDate?.ToShortDateString()
+                                </li>
                     }
-                </ul>
+                    </ul>
             }
             else
             {
-                <p class="text-success">No pending debts 🎉</p>
+                    <p class="text-success">No pending debts 🎉</p>
             }
         </div>
     </div>
