@@ -1,5 +1,6 @@
 ﻿using expensetracker.Models;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Maui.Storage;
 
 namespace expensetracker.Services
@@ -10,13 +11,17 @@ namespace expensetracker.Services
         private readonly string sessionFile = Path.Combine(FileSystem.AppDataDirectory, "session.json");
         private readonly string transactionsFile = Path.Combine(FileSystem.AppDataDirectory, "transactions.json");
 
-        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            WriteIndented = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
 
         public async Task<List<UserSettings>> LoadUsersAsync()
         {
-            if (!File.Exists(usersFile)) return new List<UserSettings>();
+            if (!File.Exists(usersFile)) return new();
             var json = await File.ReadAllTextAsync(usersFile);
-            return JsonSerializer.Deserialize<List<UserSettings>>(json) ?? new List<UserSettings>();
+            return JsonSerializer.Deserialize<List<UserSettings>>(json) ?? new();
         }
 
         public async Task SaveUsersAsync(List<UserSettings> users)
@@ -34,7 +39,6 @@ namespace expensetracker.Services
         public async Task<bool> RegisterUserAsync(UserSettings newUser)
         {
             var users = await LoadUsersAsync();
-
             if (users.Any(u => u.Username.Equals(newUser.Username, StringComparison.OrdinalIgnoreCase)))
                 return false;
 
@@ -90,9 +94,9 @@ namespace expensetracker.Services
 
         public async Task<List<Transaction>> LoadTransactionsAsync()
         {
-            if (!File.Exists(transactionsFile)) return new List<Transaction>();
+            if (!File.Exists(transactionsFile)) return new();
             var json = await File.ReadAllTextAsync(transactionsFile);
-            return JsonSerializer.Deserialize<List<Transaction>>(json) ?? new List<Transaction>();
+            return JsonSerializer.Deserialize<List<Transaction>>(json, _jsonOptions) ?? new();
         }
 
         public async Task SaveTransactionsAsync(List<Transaction> transactions)
@@ -101,7 +105,6 @@ namespace expensetracker.Services
             await File.WriteAllTextAsync(transactionsFile, json);
         }
 
-        // ✅ NEW: Add a transaction for the current user
         public async Task AddTransactionAsync(Transaction transaction)
         {
             var session = await GetSessionAsync();
@@ -109,26 +112,19 @@ namespace expensetracker.Services
                 throw new Exception("User is not logged in.");
 
             var allTransactions = await LoadTransactionsAsync();
-
-            // ✅ Set Username before saving
             transaction.Username = session.Username;
-
             allTransactions.Add(transaction);
             await SaveTransactionsAsync(allTransactions);
         }
 
-
-        // ✅ Optional: Load only transactions for current user
         public async Task<List<Transaction>> GetCurrentUserTransactionsAsync()
         {
             var session = await GetSessionAsync();
             if (session == null || !session.IsLoggedIn)
-                return new List<Transaction>();
+                return new();
 
             var all = await LoadTransactionsAsync();
-            return all
-                .Where(t => t.Title.StartsWith($"[{session.Username}]"))
-                .ToList();
+            return all.Where(t => t.Username == session.Username).ToList();
         }
     }
 }

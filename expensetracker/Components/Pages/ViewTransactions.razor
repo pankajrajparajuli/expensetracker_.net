@@ -13,10 +13,15 @@
 
     <div class="row mb-3">
         <div class="col-md-4">
-            <input class="form-control" placeholder="Search title..." @bind="SearchTerm" />
+            <input class="form-control"
+                   placeholder="Search title..."
+                   value="@SearchTerm"
+                   @oninput="e => { SearchTerm = e.Value?.ToString() ?? string.Empty; ApplyFilters(); }" />
         </div>
         <div class="col-md-4">
-            <select class="form-control" @bind="SelectedType">
+            <select class="form-control"
+                    value="@SelectedType"
+                    @onchange="e => { SelectedType = e.Value?.ToString() ?? string.Empty; ApplyFilters(); }">
                 <option value="">All Types</option>
                 <option value="Credit">Credit</option>
                 <option value="Debit">Debit</option>
@@ -56,6 +61,7 @@
                     <th>Amount</th>
                     <th>Title</th>
                     <th>Tags</th>
+                    <th>Notes</th> @* ✅ Added Notes column *@
                 </tr>
             </thead>
             <tbody>
@@ -67,6 +73,7 @@
                         <td>@tx.Amount.ToString("F2")</td>
                         <td>@tx.Title</td>
                         <td>@string.Join(", ", tx.Tags)</td>
+                        <td>@tx.Note</td> @* ✅ Displaying the Note here *@
                     </tr>
                 }
             </tbody>
@@ -75,15 +82,15 @@
 </div>
 
 @code {
-    private string Username = "";
-    private string ErrorMessage = "";
-    private string SearchTerm = "";
-    private string SelectedType = "";
+    private string Username = string.Empty;
+    private string ErrorMessage = string.Empty;
+    private string SearchTerm = string.Empty;
+    private string SelectedType = string.Empty;
     private List<string> SelectedTags = new();
     private List<Transaction> AllTransactions = new();
     private List<Transaction> FilteredTransactions = new();
 
-    private List<string> DefaultTags = new()
+    private readonly List<string> DefaultTags = new()
     {
         "Yearly", "Monthly", "Food", "Drinks", "Clothes", "Gadgets",
         "Miscellaneous", "Fuel", "Rent", "EMI", "Party"
@@ -112,7 +119,7 @@
     {
         FilteredTransactions = AllTransactions
             .Where(tx =>
-                (string.IsNullOrEmpty(SelectedType) || Enum.GetName(typeof(TransactionType), tx.Type) == SelectedType) &&
+                (string.IsNullOrEmpty(SelectedType) || tx.Type.ToString() == SelectedType) &&
                 (string.IsNullOrEmpty(SearchTerm) || tx.Title.ToLower().Contains(SearchTerm.ToLower())) &&
                 (SelectedTags.Count == 0 || tx.Tags.Any(tag => SelectedTags.Contains(tag)))
             )

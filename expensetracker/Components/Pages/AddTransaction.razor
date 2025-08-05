@@ -89,10 +89,29 @@
         {
             if (string.IsNullOrWhiteSpace(transaction.Title) || transaction.Amount <= 0)
             {
-                Message = "Please enter valid title and amount.";
+                Message = "Please enter a valid title and amount.";
                 return;
             }
 
+            var session = await DataService.GetSessionAsync();
+            if (session is null || !session.IsLoggedIn)
+            {
+                Message = "You must be logged in to add a transaction.";
+                return;
+            }
+
+            var allTransactions = await DataService.GetCurrentUserTransactionsAsync();
+            var totalCredit = allTransactions.Where(t => t.Type == TransactionType.Credit).Sum(t => t.Amount);
+            var totalDebit = allTransactions.Where(t => t.Type == TransactionType.Debit).Sum(t => t.Amount);
+            var balance = totalCredit - totalDebit;
+
+            if (transaction.Type == TransactionType.Debit && transaction.Amount > balance)
+            {
+                Message = $"Insufficient balance. Your current balance is {balance:C}.";
+                return;
+            }
+
+            transaction.Username = session.Username;
             await DataService.AddTransactionAsync(transaction);
             NavManager.NavigateTo("/viewtransactions");
         }

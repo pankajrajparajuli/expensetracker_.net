@@ -10,51 +10,60 @@
         This is your dashboard. You can manage transactions, settings, and more from here.
     </div>
 
-    <div class="row g-3 mt-4">
-        <div class="col-md-6">
-            <div class="card border-primary">
-                <div class="card-body">
-                    <h5 class="card-title">Add New Transaction</h5>
-                    <p class="card-text">Record income, expenses, or debt.</p>
-                    <button class="btn btn-primary" @onclick="@(() => Nav.NavigateTo("/addtransaction"))">Add Transaction</button>
-                </div>
-            </div>
-        </div>
+    <div class="mt-5">
+        <h4 class="mb-3">Financial Overview</h4>
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Count</th> @* ✅ Added count column *@
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Total Balance</td>
+                    <td class="fw-bold">@TotalBalance.ToString("C")</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>Total Credit</td>
+                    <td>@TotalCredit.ToString("C")</td>
+                    <td>@CountCredit</td> @* ✅ Credit count shown here *@
+                </tr>
+                <tr>
+                    <td>Total Debit</td>
+                    <td>@TotalDebit.ToString("C")</td>
+                    <td>@CountDebit</td> @* ✅ Debit count shown here *@
+                </tr>
+                <tr>
+                    <td>Total Debt</td>
+                    <td>@TotalDebt.ToString("C")</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
 
-        <div class="col-md-6">
-            <div class="card border-success">
-                <div class="card-body">
-                    <h5 class="card-title">View All Transactions</h5>
-                    <p class="card-text">Search, filter, and analyze past transactions.</p>
-                    <button class="btn btn-success" @onclick="@(() => Nav.NavigateTo("/viewtransactions"))">View Transactions</button>
-                </div>
-            </div>
-        </div>
+        @if (TotalBalance >= TotalDebt && TotalDebt > 0)
+        {
+            <button class="btn btn-outline-warning" @onclick="PayDebt">Pay Off Debt</button>
+        }
 
-        <div class="col-md-6">
-            <div class="card border-secondary">
-                <div class="card-body">
-                    <h5 class="card-title">Settings</h5>
-                    <p class="card-text">Update your preferences and currency.</p>
-                    <button class="btn btn-secondary" @onclick="@(() => Nav.NavigateTo("/settings"))">Go to Settings</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card border-danger">
-                <div class="card-body">
-                    <h5 class="card-title text-danger">Logout</h5>
-                    <p class="card-text">Sign out from your account.</p>
-                    <button class="btn btn-outline-danger" @onclick="Logout">Logout</button>
-                </div>
-            </div>
+        <div class="mt-5">
+            <h4 class="mb-3">Spending Chart</h4>
+            <canvas id="spendingChart" width="400" height="200"></canvas>
         </div>
     </div>
 </div>
 
 @code {
     private string CurrentUsername = "";
+    private decimal TotalBalance = 0;
+    private decimal TotalCredit = 0;
+    private decimal TotalDebit = 0;
+    private decimal TotalDebt = 0;
+    private int CountCredit = 0; // ✅ Added
+    private int CountDebit = 0;  // ✅ Added
 
     protected override async Task OnInitializedAsync()
     {
@@ -67,6 +76,20 @@
         }
 
         CurrentUsername = session.Username;
+
+        var transactions = await DataService.GetCurrentUserTransactionsAsync();
+
+        var credits = transactions.Where(t => t.Type == TransactionType.Credit).ToList();
+        var debits = transactions.Where(t => t.Type == TransactionType.Debit).ToList();
+
+        CountCredit = credits.Count; // ✅ Count of Credit
+        CountDebit = debits.Count;   // ✅ Count of Debit
+
+        TotalCredit = credits.Sum(t => t.Amount);
+        TotalDebit = debits.Sum(t => t.Amount);
+        TotalDebt = transactions.Where(t => t.Type == TransactionType.Debt && !t.IsDebtCleared).Sum(t => t.Amount);
+        var clearedDebt = transactions.Where(t => t.Type == TransactionType.Debt && t.IsDebtCleared).Sum(t => t.Amount);
+        TotalBalance = TotalCredit - TotalDebit - clearedDebt;
     }
 
     private async Task Logout()
@@ -74,4 +97,69 @@
         await DataService.LogoutAsync();
         Nav.NavigateTo("/login", forceLoad: true);
     }
+
+    private async Task PayDebt()
+    {
+        var transactions = await DataService.GetCurrentUserTransactionsAsync();
+        var outstandingDebts = transactions.Where(t => t.Type == TransactionType.Debt && !t.IsDebtCleared).ToList();
+        var totalOutstanding = outstandingDebts.Sum(d => d.Amount);
+
+        if (TotalBalance >= totalOutstanding)
+        {
+            foreach (var debt in outstandingDebts)
+            {
+                debt.IsDebtCleared = true;
+            }
+
+            await DataService.SaveTransactionsAsync(transactions);
+        }
+
+        await OnInitializedAsync(); // Refresh
+    }
 }
+
+<!-- Scripts block for Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    window.addEventListener('load', () => {
+        const ctx = document.getElementById('spendingChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Credit', 'Debit', 'Debt'],
+                datasets: [{
+                    label: 'Amount in NPR',
+                    data: [@TotalCredit, @TotalDebit, @TotalDebt],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(255, 206, 86, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 206, 86, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Credit vs Debit vs Debt Overview'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+</script>
